@@ -1,0 +1,97 @@
+---
+title: "Data 607_Hw2_MovingRatings"
+author: "Sin Ying Wong"
+date: "9/8/2019"
+output:
+  html_document: 
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Assignment 2 : SQL and R**
+
+Choose six recent popular movies. Ask at least five people that you know (friends, family, classmates,
+imaginary friends) to rate each of these movie that they have seen on a scale of 1 to 5. Take the results
+(observations) and store them in a SQL database. Load the information into an R dataframe.
+Your deliverables should include your SQL scripts and your R Markdown code, posted to GitHub.
+
+## Import Library
+
+```{r library}
+library(RMySQL)
+```
+
+
+```{r pwd, echo = FALSE}
+pwd = 'pikachu'
+```
+
+
+## Read the database from MySQL
+
+```{r read, eval = TRUE}
+moviedb = dbConnect(MySQL(),user = 'root', password = pwd, dbname = 'data607', host='localhost')
+dbListTables(moviedb)
+dbListFields(moviedb, 'Friends')
+dbListFields(moviedb, 'MovieRating')
+```
+
+## Join the tables in SQL and storing the result into R
+
+```{r join tables, eval=TRUE}
+ratings <- dbGetQuery(moviedb, 'SELECT m.movie_name, f.friend_name, m.movie_rating FROM movierating m 
+          LEFT JOIN friends f on m.friend_id = f.friend_id 
+          ORDER BY m.movie_rating desc')
+```
+
+## Check if there are any null values in the dataset
+
+```{r null_check}
+any(is.null(ratings))
+```
+
+According to the result, there are no NULL values and we can move on.
+
+## Display the Movie Rating table by ratings
+
+```{r kable_table, eval=TRUE}
+library(knitr)
+library(kableExtra)
+kable(ratings, "html", caption = "Ratings of 6 Movies from 6 Friends") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed")) %>%
+  column_spec(3, bold = T) %>%
+  row_spec(row=0, background = "yellow") %>%
+  scroll_box(width = "600px", height = "400px")
+```
+
+##
+
+```{r plot graph}
+library(ggplot2)
+ggplot(ratings, aes(x=reorder(movie_name, movie_rating),  y=movie_rating, fill = friend_name))  +
+    geom_bar(stat="identity")  +
+    geom_text(aes(label=movie_rating, legend="Friends"), size=3, position=position_stack(vjust=0.5)) +
+    ggtitle("Ratings of 6 Movies by 6 Friends") +
+    labs(x="Movies", y="Ratings") + guides(fill=guide_legend(title="Friends"))
+```
+
+## Get the average rating of each movie and sort in descending order
+
+```{r average}
+average <- aggregate(movie_rating~movie_name, data=ratings, FUN=mean)
+average[order(-average$movie_rating),]
+```
+
+## Conclusion
+
+From the two tables generated above, the ratings got from 6 Friends sorting from high to low is: Alita, Glass, Black Panther, Toy Story 4, Detective Pikachu, and Aquaman.
+
+## Disconnect my database
+
+```{r disconnect db}
+dbDisconnect(moviedb)
+```
