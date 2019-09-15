@@ -1,0 +1,182 @@
+---
+title: "Data 607_Hw3_RegularExpression"
+author: "Sin Ying Wong"
+date: "9/14/2019"
+output:
+  html_document: 
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **Assignment 3 : Regular Expression**
+
+Please deliver links to an R Markdown file (in GitHub and rpubs.com) with solutions to problems 3 and 4 from chapter 8 of Automated Data Collection in R.  Problem 9 is extra credit.  You may work in a small group, but please submit separately with names of all group participants in your submission.
+
+Here is the referenced code for the introductory example in #3:
+
+```{r rawdata}
+raw.data <- "555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+```
+
+-----
+
+## Import Library
+
+```{r library}
+library(stringr)
+```
+
+-----
+
+## Problem #3 from Chapter 8 of *Automated Data Collection in R*
+
+**Q3. Copy the introductory example. The vector `name` stores the extracted names.**
+
+```{r name}
+name <- unlist(str_extract_all(raw.data, "[[:alpha:]., ]{2,}"))
+name
+```
+
+
+**(a) Use the tools of this chapter to rearrange the vector so that all elements conform to the standard first_name last_name.**
+
+
+To relocate the pattern of "LastName, (title/Second Name) FirstName" and exclude title:
+```{r firstname}
+flname <- str_replace(str_replace(name, "(\\w+)(, )(.+)", "\\3 \\1"), "^([A-Z][a-z]+\\.)( )(.+)", "\\3")
+
+flname
+```
+
+
+**(b) Construct a logical vector indicating whether a character has a title (i.e., Rev. and Dr.).**
+
+
+It can be done in two ways:
+
+(i) To detect if title is in the corresponding names, return as boolean
+```{r title1}
+title1 <- str_detect(name, "[A-Z][a-z]+\\.")
+title1
+name[title1]
+```
+
+(ii) To return the positions of the strings in the first vector in the second vector
+```{r title2}
+title2 <- pmatch(c("Rev.","Dr."), name)
+title2
+name[title2]
+```
+
+They both show that the third and the sixth names has a title.  Those names are "Rev. Timothy Lovejoy" and "Dr. Julius Hibbert".
+
+
+**(c) Construct a logical vector indicating whether a character has a second name.**
+
+
+To detect if a second name is in the corresponding names, return as boolean, from `name`
+```{r secondname1}
+Sname1 <- str_detect(name, "[A-Z]+?\\.")
+Sname1
+flname[Sname1]
+```
+
+To detect if a second name is in the corresponding names, return as boolean, from `flname`
+```{r secondname2}
+Sname2 <- str_detect(flname, "\\w+\\.")
+Sname2
+flname[Sname2]
+```
+
+-----
+
+## Problem #4 from Chapter 8 of *Automated Data Collection in R*
+
+**Q4. Describe the types of strings that conform to the following regular expressions and construct an example that is matched by the regular expression.**
+
+**(a)** [0-9]+\\$                      (Note: There are two backslashes in front of the dollar sign)
+
+Pattern(a): Any type of string that contains one or more numbers continues with a dollar sign.
+```{r part4a}
+## (a) [0-9]+\\$
+
+unlist(str_extract_all(c("a123b234c78$d0986", "6789$", "000ab$", "000$abc"), "[0-9]+\\$"))
+```
+
+**(b)** \\b[a-z]{1,4}\\b              (Note: There are two backslashes in front of both b's)
+
+Pattern(b): Any words within a string that have and only have one to four lower case letters. Nothing included at the front or back.
+```{r part4b}
+## (b) \\b[a-z]{1,4}\\b  
+
+str_extract_all(c("Michael's a baby boy.", "When Kay has $789,", "This is Data607 assignment 3 question four"), "\\b[a-z]{1,4}\\b")
+```
+
+**(c)** .*?\\.txt$                       (Note: There is a pair of backslashes)
+
+Pattern(c): Any character that appears zero or one time, which is totally optional and will be matched at most once, ends with ".txt".  To simplify the statement, it matches with any words that ends with ".txt", including ".txt" itself.
+```{r part4c}
+## (c) .*?\\.txt$ 
+
+unlist(str_extract_all(c("assignment3.txt", "Q4.text", "607.txt.txt", "Data607.txtbook", "textbook.text"), ".*?\\.txt$"))
+```
+
+
+**(d)** \\d{2}/\\d{2}/\\d{4}            (Note: There are 3 pairs of backslashes)
+
+Pattern(d): Two digits follows with a slash, follows with two digits, follows with a slash, and follows with four digits.  Which is the pattern 00/00/0000 while 0 can be any numbers.
+```{r part4d}
+## (d) \\d{2}/\\d{2}/\\d{4}
+
+unlist(str_extract_all(c("today is 9/14/2019", "Christmas is 12/25", "01/01/2020 is new year.", "01/01/20 returns false"), "\\d{2}/\\d{2}/\\d{4}"))
+```
+
+
+**(e)** <(.+?)>.+?</\\1>               (Note: There are two backslashes in front of "1")
+
+Pattern(e):<br/>
+
+Backreference means when we enclose elements in parenthesis, we want to match further instances of that particular elements, where "\\1" here means matching the elements in parenthesis one more time.  
+
+This pattern (e) means a string contains symbol "<", follows with any characters appears one or more times while those characters will be matched at most once (hereby the refernce group), follows with symbol ">", follows with any characters appears one or more times while those characters will be matched at most once, follows with symbols "</", follows with the reference group again, plus a ">" symbol.
+
+To simplify in meaning: \<reference group\>anything once\</reference group\>
+
+```{r part4e}
+## (e) <(.+?)>.+?</\\1>
+
+unlist(str_extract_all(c("<n>test</n>", "<group>123123</group>", "<it>is</false>", "</1234>", "<abcd></abcd>"), "<(.+?)>.+?</\\1>"))
+```
+
+
+-----
+
+
+## Problem #9 from Chapter 8 of *Automated Data Collection in R*
+
+**Q9. The following code hides a secret message. Crack it with R and regular expressions.**
+
+*Hint:* Some of the characters are more revealing than others! The code snippet is also available in the materials at [www.r-datacollection.com](www.r-datacollection.com).
+
+clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo
+Uwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO
+d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5
+fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr
+
+```{r problem9}
+code <- "clcopCow1zmstc0d87wnkig7OvdicpNuggvhryn92Gjuwczi8hqrfpRxs5Aj5dwpn0Tanwo
+Uwisdij7Lj8kpf03AT5Idr3coc0bt7yczjatOaootj55t3Nj3ne6c4Sfek.r1w1YwwojigO
+d6vrfUrbz2.2bkAnbhzgv4R9i05zEcrop.wAgnb.SqoU65fPa1otfb7wEm24k6t3sR9zqe5
+fy89n6Nd5t9kc4fE905gmc4Rgxo5nhDk!gr"
+
+secretmsg <- unlist(str_extract_all(code, "[[:upper:][:punct:]]"))
+secretmsg
+secretmsg <- str_replace_all(str_c(secretmsg, sep="", collapse=""), "\\.", " ")
+secretmsg
+```
+
+-----
