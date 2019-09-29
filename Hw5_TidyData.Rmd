@@ -1,0 +1,169 @@
+---
+title: "DATA 607 Assignment 5: Tidying and Transforming Data"
+author: "Fan Xu, Sin Ying Wong"
+date: "9/28/2019"
+fontsize: 9pt
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+  pdf_document:
+        extra_dependencies: ["geometry", "multicol", "multirow"]
+theme: lumen
+number_sections: yes
+toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Assignment Description
+!['Source: Numbersense, Kaiser Fung, McGraw Hill, 2013'](https://raw.githubusercontent.com/shirley-wong/Data-607/master/Ass5_data.png)
+<center>
+<span style="color:blue">Source: Numbersense, Kaiser Fung, McGraw Hill, 2013</span>
+</center><br/>
+
+The chart above describes arrival delays for two airlines across five destinations. Your task is to:
+
+(1) Create a .CSV file (or optionally, a MySQL database!) that includes all of the information above. You’re encouraged to use a “wide” structure similar to how the information appears above, so that you can practice tidying and transformations as described below.
+
+(2) Read the information from your .CSV file into R, and use tidyr and dplyr as needed to tidy and transform your data.
+
+(3) Perform analysis to compare the arrival delays for the two airlines.
+
+(4) Your code should be in an R Markdown file, posted to rpubs.com, and should include narrative descriptions of your data cleanup work, analysis, and conclusions. Please include in your homework submission:
+
+      ● The URL to the .Rmd file in your GitHub repository. and
+
+      ● The URL for your rpubs.com web page.
+
+# 2. Read Data from GitHub
+```{r Read Data}
+rawdata<-read.csv('https://raw.githubusercontent.com/shirley-wong/Data-607/master/Ass5_data.csv', stringsAsFactors = FALSE)
+rawdata
+
+```
+
+# 3. Tidy and Transform Data
+The following actions are performed to the raw dataset:
+  1. Remove empty row;
+  2. Rename columns;
+  3. Fill down the aire line names as the name only appear once in the "Name" column;
+  4. Perform 'gather' and 'spread' to reshape data, changing locations from variables to values, and arrival status from values to variables.
+  5. Compute delay rate of each data row. 
+```{r tidy & Transform}
+library(tidyr)
+library(dplyr)
+library(stringr)
+data<-na.omit(rawdata) %>% 
+  rename(Air.Line = X, Arrival = X.1) %>% 
+  mutate(Air.Line = na_if(Air.Line,'')) %>% 
+  fill(Air.Line, .direction = 'down') %>% 
+  gather('Location','Flight.Cnt',3:7) %>% 
+  mutate(Flight.Cnt = as.integer(str_replace(Flight.Cnt,',','')),
+         Arrival = str_replace(Arrival, 'on time','On.Time'),
+         Arrival = str_replace(Arrival, 'delayed','Delayed')) %>%
+  spread(Arrival, Flight.Cnt) %>%
+  mutate(Flight = Delayed+On.Time,
+         Delay.Rate = Delayed / (Delayed+On.Time)) 
+data
+```
+
+# 4. Analysis on Arrival Delays
+Firstly we calculate the total delayed flights, total flights and overall delay rates of each airline.
+```{r analysis}
+data2 <- data %>%
+  select(Air.Line, Delayed, Flight, On.Time) %>%
+  group_by(Air.Line) %>%
+  summarize(Delayed = sum(Delayed), Flight = sum(Flight), Delay.Rate = sum(Delayed)/sum(Flight))
+data2
+```
+
+Plot the `data2` above in bar charts. 
+```{r Plots 1}
+library(scales)
+library(ggplot2)
+library(ggpubr)
+
+p0 <- ggplot(data = data2,aes(x=Air.Line, y=Flight, fill=Air.Line, label=Delay.Rate))+
+  geom_bar(stat='identity')+
+  ggtitle('Total Flights by Air Line')+
+  xlab('Air Line')+ylab('Count of Flights')+
+  ylim(0,8000)+
+  geom_text(aes(label=Flight),vjust=-0.5, hjust=0.5, position = position_dodge(width = 1), color="black")+
+  theme(plot.title = element_text(hjust=0.5),
+        axis.text.y = element_text(angle = 90, hjust = 0.5),
+        legend.position = "none")+
+  coord_flip()
+        
+p1 <- ggplot(data = data2,aes(x=Air.Line, y=Delay.Rate, fill=Air.Line, label=Delay.Rate))+
+  geom_bar(stat='identity')+
+  ggtitle('Delay Rate by Air Line')+
+  xlab('')+ylab('Delay Rate')+
+  ylim(0,0.15)+
+  geom_text(aes(label=percent(Delay.Rate)),vjust=-0.5, hjust=0.5, position = position_dodge(width = 1), color="black")+
+  theme(plot.title = element_text(hjust=0.5),
+        axis.text.y = element_blank(),
+        legend.position = "right")+
+  coord_flip()
+
+ggarrange(p0,p1,ncol=2)
+```
+
+
+Secondly, plot the `data` in section #3 in bar charts as well.
+```{r Plots 2}
+p2 <- ggplot(data = data,aes(x=Air.Line, y=Flight, fill=Air.Line, label=Flight))+
+  geom_bar(stat='identity')+
+  facet_grid(~Location) +
+  ggtitle('Total number of Flights by Location')+
+  xlab('')+ylab('Count of Flights') +
+  ylim(0,6000)+
+  geom_text(aes(y=Flight),vjust=-0.5, hjust=0.4, position = position_dodge(width = 1), color="black")+
+  theme(plot.title = element_text(hjust=0.5),
+        axis.text.x = element_blank(),
+        legend.position = "none")
+
+p3 <- ggplot(data = data,aes(x=Air.Line, y=Delay.Rate, fill=Air.Line, label=Delay.Rate))+
+  geom_bar(stat='identity')+
+  facet_grid(~Location)+
+  ggtitle('Delay Rate by Location')+
+  xlab('Air Line')+ylab('Delay Rate')+
+  ylim(0,0.4)+
+  geom_text(aes(label=percent(Delay.Rate)),vjust=-0.5, hjust=0.5, position = position_dodge(width = 1), color="black")+
+  theme(plot.title = element_text(hjust=0.5),
+        #axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "none")
+
+ggarrange(p2,p3,nrow=2)
+```
+
+
+
+
+# 5. Conclusion
+
+1. Comparison between Alaska and Am West
+      a. Alaska Airline has overall fewer flights but higher delay rate than Am West.
+      b. Interestingly, when breaking down into locations, we got an opposite result that Alaska has lower delay rate than Am West in all 5 locations in our dataset. 
+      c. The contradiction might due to Am West has lowest delay rate but exceptionally largest amount of flights in Phoenix airpot compared to other locations.
+      
+2. For Alaska
+      a. It has highest delay rate and the second largest amount of flights in San.Francisco airport.
+      b. It has lowest delay rate and smallest amount of flights in Phoenix airpot.
+      c. It has largest amount of flights and a second high delay rate in Seattle airpot.
+
+3. For Am West
+      a. It has highest delay rate and the third largest amount of flights in San.Francisco airport.
+      b. It has lowest delay rate and the largest amount of flights in Phoenix airpot.
+      c. It has smallest amount of flights but second highest delay rate in Seattle airpot.
+
+      
+
+
+
+
+
