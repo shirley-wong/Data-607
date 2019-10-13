@@ -5,7 +5,7 @@
 	"Publisher" : "John Wiley & Sons, Ltd",
 	"Year" : 2015,
 	"Edition" : "1st",
-	ISBN : "978-1-118-83481-7"
+	"ISBN" : "978-1-118-83481-7"
 	},
 	{
 	"Title" : "Data Science for Business",
@@ -13,7 +13,7 @@
 	"Publisher" : "O’Reilly Media, Inc",
 	"Year" : 2013,
 	"Edition" : "1st",
-	ISBN : "978-1-449-36132-7"
+	"ISBN" : "978-1-449-36132-7"
 	},
 	{
 	"Title" : "Bayesian Data Analysis",
@@ -21,6 +21,6 @@
 	"Publisher" : "CRC Press Taylor & Francis Group",
 	"Year" : 2013,
 	"Edition" : "3rd",
-	ISBN : "978-1-4398-9820-8"
+	"ISBN" : "978-1-4398-9820-8"
 	}]
 }
