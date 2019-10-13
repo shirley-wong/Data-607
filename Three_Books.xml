@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<three_books>
+	<book id = "1">
+    	<Title>Automated Data Collection with R</Title>
+        <Author Author1 = "Simon Munzert" Author2 = "Christian Rubba" Author3 = "Peter Meißner" Author4 = "Dominic Nyhuis"/>
+        <Publisher>John Wiley &amp; Sons, Ltd</Publisher>
+        <Year>2015</Year>
+        <Edition>1st</Edition>
+        <ISBN>978-1-118-83481-7</ISBN>
+	</book>
+    <book id = "2">
+    	<Title>Data Science for Business</Title>
+        <Author Author1 = "Foster Provost" Author2 = "Tom Fawcett"/>
+        <Publisher>O’Reilly Media, Inc</Publisher>
+        <Year>2013</Year>
+        <Edition>1st</Edition>
+        <ISBN>978-1-449-36132-7</ISBN>
+	</book>
+    <book id = "3">
+    	<Title>Bayesian Data Analysis</Title>
+        <Author Author1 = "Andrew Gelman" Author2 = "John B. Carlin" Author3 = "Hal S. Stern" Author4 = "David B. Dunson" Author5 = "Aki Vehtari" Author6 = "Donald B. Rubin"/>
+        <Publisher>CRC Press Taylor &amp; Francis Group</Publisher>
+        <Year>2013</Year>
+        <Edition>3rd</Edition>
+        <ISBN>978-1-4398-9820-8</ISBN>
+	</book>    
+</three_books>
