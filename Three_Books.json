@@ -1,7 +1,7 @@
 {"three books" :[
 	{
 	"Title" : "Automated Data Collection with R",
-	"Author" : ["Simon Munzert", "Christian Rubba", "Peter Meißner", "Dominic Nyhuis"]
+	"Authors" : ["Simon Munzert", "Christian Rubba", "Peter Meißner", "Dominic Nyhuis"],
 	"Publisher" : "John Wiley & Sons, Ltd",
 	"Year" : 2015,
 	"Edition" : "1st",
@@ -9,7 +9,7 @@
 	},
 	{
 	"Title" : "Data Science for Business",
-	"Author" : ["Foster Provost", "Tom Fawcett"]
+	"Authors" : ["Foster Provost", "Tom Fawcett"],
 	"Publisher" : "O’Reilly Media, Inc",
 	"Year" : 2013,
 	"Edition" : "1st",
@@ -17,7 +17,7 @@
 	},
 	{
 	"Title" : "Bayesian Data Analysis",
-	"Author" : ["Andrew Gelman", "John B. Carlin", "Hal S. Stern", "David B. Dunson", "Aki Vehtari", "Donald B. Rubin"]
+	"Authors" : ["Andrew Gelman", "John B. Carlin", "Hal S. Stern", "David B. Dunson", "Aki Vehtari", "Donald B. Rubin"],
 	"Publisher" : "CRC Press Taylor & Francis Group",
 	"Year" : 2013,
 	"Edition" : "3rd",
