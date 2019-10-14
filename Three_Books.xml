@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <three_books>
-	<book id = "1">
+    <book id = "1">
     	<Title>Automated Data Collection with R</Title>
         <Authors> 
 		<Author ID="1">Simon Munzert</Author>
