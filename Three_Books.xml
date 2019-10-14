@@ -3,10 +3,10 @@
 	<book id = "1">
     	<Title>Automated Data Collection with R</Title>
         <Authors> 
-		<Author ID="1">Simon Munzert<Author>
-		<Author ID="2">Christian Rubba<Author>
-		<Author ID="3">Peter Meißner<Author>
-		<Author ID="4">Dominic Nyhuis<Author>
+		<Author ID="1">Simon Munzert</Author>
+		<Author ID="2">Christian Rubba</Author>
+		<Author ID="3">Peter Meißner</Author>
+		<Author ID="4">Dominic Nyhuis</Author>
 	</Authors>
         <Publisher>John Wiley &amp; Sons, Ltd</Publisher>
         <Year>2015</Year>
@@ -16,8 +16,8 @@
     <book id = "2">
     	<Title>Data Science for Business</Title>
         <Authors> 
-		<Author ID="1">Foster Provost<Author>
-		<Author ID="2">Tom Fawcett<Author>
+		<Author ID="1">Foster Provost</Author>
+		<Author ID="2">Tom Fawcett</Author>
 	</Authors>
         <Publisher>O’Reilly Media, Inc</Publisher>
         <Year>2013</Year>
@@ -27,8 +27,8 @@
     <book id = "3">
     	<Title>Text Mining with R: A Tidy Approach</Title>
         <Authors> 
-		<Author ID="1">Julia Silge<Author>
-		<Author ID="2">David Robinson<Author>
+		<Author ID="1">Julia Silge</Author>
+		<Author ID="2">David Robinson</Author>
 	</Authors>
         <Publisher>O’Reilly Media, Inc</Publisher>
         <Year>2017</Year>
