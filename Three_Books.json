@@ -16,11 +16,11 @@
 	"ISBN" : "978-1-449-36132-7"
 	},
 	{
-	"Title" : "Bayesian Data Analysis",
-	"Authors" : ["Andrew Gelman", "John B. Carlin", "Hal S. Stern", "David B. Dunson", "Aki Vehtari", "Donald B. Rubin"],
-	"Publisher" : "CRC Press Taylor & Francis Group",
-	"Year" : 2013,
-	"Edition" : "3rd",
-	"ISBN" : "978-1-4398-9820-8"
+	"Title" : "Text Mining with R: A Tidy Approach",
+	"Authors" : ["Julia Silge", "David Robinson"],
+	"Publisher" : "O’Reilly Media, Inc",
+	"Year" : 2017,
+	"Edition" : "1st",
+	"ISBN" : "978-1-491-98165-8"
 	}]
 }
