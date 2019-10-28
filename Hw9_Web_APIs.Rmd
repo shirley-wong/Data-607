@@ -1,0 +1,91 @@
+---
+title: "Data 607_Hw9_Web APIs"
+author: "Sin Ying Wong"
+date: "10/27/2019"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+  pdf_document:
+    extra_dependencies: ["geometry", "multicol", "multirow"]
+theme: lumen
+number_sections: yes
+toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Instruction
+
+The New York Times web site provides a rich set of APIs, as described here: <https://developer.nytimes.com/apis>(https://developer.nytimes.com/apis) 
+
+You’ll need to start by signing up for an API key. 
+
+Your task is to choose one of the New York Times APIs, construct an interface in R to read in the JSON data, and transform it into an R DataFrame.
+
+# Load packages
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(httr)
+library(jsonlite)
+library(stringr)
+```
+
+
+```{r api, echo=FALSE}
+api_key <- 'I005E9HTTpYWKlx2Vztc1DiCS01pll1G'
+
+```
+
+# Read data
+
+Searching for Climate articles released in the first five months in 2019
+
+```{r read_data}
+url = str_c("https://api.nytimes.com/svc/search/v2/articlesearch.json", 
+            '?fq=news_desk:("Climate")',
+            '&begin_date=',"20190101",
+            '&end_date=',"20190531",
+            '&api-key=',api_key,
+            sep = '')
+
+url
+
+data <- GET(url)
+
+data
+
+http_status(data)
+
+stop_for_status(data)
+```
+
+# Convert to DataFrame
+
+```{r dataframe}
+climate_df <- fromJSON(url) %>% 
+  .$response %>% 
+  .$doc %>%
+  mutate(headline = headline$main,
+         pub_date = as.Date(pub_date),
+         byline = byline$original) %>%
+  mutate(byline = str_remove(byline, '^By ')) %>%
+  rename(author = byline, 
+         date = pub_date) %>%
+  select(date,
+         type_of_material,
+         headline,
+         abstract,
+         author,
+         web_url)
+
+climate_df
+
+```
+
