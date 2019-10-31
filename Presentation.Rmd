@@ -1,0 +1,227 @@
+---
+title: "Basic Data Mining with n-Grams"
+author: "Sin Ying WOng"
+date: "10/30/2019"
+output:
+  pdf_document:
+        extra_dependencies: ["geometry", "multicol", "multirow"]
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+theme: lumen
+number_sections: yes
+toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load Package
+```{r 0, message=FALSE, warning=FALSE}
+library(readtext)
+library(tidyverse)
+library(stringr)
+library(tm)
+library(RWeka)
+library(SnowballC)
+library(wordcloud)
+```
+
+# Read Data
+
+```{r 1}
+
+data <-readtext('C:/Users/wsyin/Documents/Data 607/Presentation/Text_NLP.txt')
+                
+text <- data$text
+text <- text %>% 
+  str_remove_all('[^[:alnum:][:space:]]') %>%
+  str_replace_all('\\n', ' ')
+
+#text
+
+```
+
+# Create functions for n-grams and tidying data
+
+```{r 2}
+BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 2, max = 2))
+TrigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 3, max = 3))
+FourgramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min = 4, max = 4))
+FivegramTokenizer <- function(x,n) NGramTokenizer(x, Weka_control(min = 5, max = 5))
+removeURL <- function(x) str_replace_all(x,"http[[:alnum:]]*", "")
+```
+
+
+# Create a VCorpus for data, perform tidying
+
+```{r 3}
+text_corpus <- VCorpus(VectorSource(text)) %>%
+  tm_map(removeNumbers) %>%
+  tm_map(removePunctuation) %>%
+  tm_map(removeWords, stopwords("en")) %>%
+  tm_map(content_transformer(tolower)) %>%
+  tm_map(content_transformer(removeURL)) %>%
+  tm_map(stripWhitespace)
+```
+
+# Create a character class to store high frequency n_grams
+
+```{r 4}
+key_n_gram <- character()
+```
+
+# Create term-document matrix on tri-grams, observe high frequency and meaningful tri-grams, insert into key_n_gram
+
+```{r 5}
+tdm.trigram <- TermDocumentMatrix(text_corpus, 
+                                 control = list(wordLengths = c(10,Inf),
+                                                tokenize = TrigramTokenizer))
+#inspect(tdm.bigram)
+
+freq.tdm.trigram <- data.frame(word = tdm.trigram$dimnames$Terms, frequency = tdm.trigram$v, stringsAsFactors = FALSE) %>%
+  arrange(-frequency)
+
+freq.tdm.trigram
+```
+
+# Observe high frequency and meaningful tri-grams, insert into key_n_gram
+
+```{r 6}
+key_n_gram <- c(key_n_gram, freq.tdm.trigram$word[1])
+
+key_n_gram
+
+```
+
+
+# Create term-document matrix on bi-grams
+
+```{r 7}
+tdm.bigram <- TermDocumentMatrix(text_corpus, 
+                                 control = list(wordLengths = c(8,Inf),
+                                                tokenize = BigramTokenizer))
+#inspect(tdm.bigram)
+
+freq.tdm.bigram <- data.frame(word = tdm.bigram$dimnames$Terms, frequency = tdm.bigram$v, stringsAsFactors = FALSE) %>%
+  arrange(-frequency)
+
+freq.tdm.bigram
+```
+
+
+# Insert high frequency and meaningful bi-grams into key_n_grams
+
+```{r 8}
+key_n_gram <- c(key_n_gram,freq.tdm.bigram$word[1:10])
+
+key_n_gram
+
+```
+
+
+
+# Optional: create term-document matrix on four-gram, observed no meaningful patterns, and so will for five-gram
+
+```{r 9}
+tdm.4gram <- TermDocumentMatrix(text_corpus, 
+                                 control = list(wordLengths = c(14,Inf),
+                                                tokenize = FourgramTokenizer))
+#inspect(tdm.bigram)
+
+freq.tdm.4gram <- data.frame(word = tdm.4gram$dimnames$Terms, frequency = tdm.4gram$v) %>%
+  arrange(-frequency)
+
+freq.tdm.4gram
+
+```
+
+
+# Concatenating n-grams by '_'
+
+```{r 10}
+
+text_corpus_mod <- text_corpus
+
+for (key in key_n_gram){
+text_corpus_mod <- text_corpus_mod[[1]]$content %>%
+  str_replace_all(key,str_replace_all(key,' ','_')) %>%
+  VectorSource() %>%
+  VCorpus()
+}
+text_corpus_mod
+
+dataframe<-data.frame(text=unlist(sapply(text_corpus_mod, `[`, "content")), stringsAsFactors=F)
+
+dataframe$text[1]
+```
+
+
+# Output
+
+```{r 11}
+tdm.mod <- TermDocumentMatrix(text_corpus_mod,control = list(wordLengths = c(4,Inf)))
+#inspect(tdm2)
+tdm.mod.word <- data.frame(word = tdm.mod$dimnames$Terms, frequency = tdm.mod$v,stringsAsFactors = FALSE) %>%
+  arrange(-frequency)
+
+tdm.mod.word
+
+```
+
+
+# Output before concatenating n-grams
+
+```{r 12}
+tdm <- TermDocumentMatrix(text_corpus,control = list(wordLengths = c(4,Inf)))
+#inspect(tdm2)
+tdm.word <- data.frame(word = tdm$dimnames$Terms, frequency = tdm$v,stringsAsFactors = FALSE) %>%
+  arrange(-frequency)
+
+tdm.word
+```
+
+
+# Chart 1 for PPT
+
+```{r 13}
+tdm.mod.word_top15 <- tdm.mod.word %>% top_n(15)
+ggplot(tdm.mod.word_top15, aes(x=reorder(word,frequency) , y=frequency, fill=frequency))+
+  geom_bar(stat='identity')+
+  coord_flip()+
+  ylab('word')+
+  ggtitle('Word Count After Concatenating N-grams')+
+  scale_fill_gradient(low = 'deeppink4', high = 'deeppink1')
+```
+
+
+# Chart 2 for PPT
+
+```{r 14}
+
+tdm.word_top15 <- tdm.word %>% top_n(15)
+ggplot(tdm.word_top15, aes(x=reorder(word,frequency) , y=frequency, fill=frequency))+
+  geom_bar(stat='identity')+
+  coord_flip()+
+  ylab('word')+
+  ggtitle('Word Count Before Concatenating N-grams')
+```
+
+# WordCloud for PPT
+
+```{r 15, message=FALSE, warning=FALSE}
+
+
+
+wordcloud(tdm.mod.word$word, tdm.mod.word$frequency,random.order=FALSE, colors=brewer.pal(8, "Dark2"))
+
+
+```
+
+
+
+```
