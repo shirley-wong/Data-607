@@ -1,0 +1,111 @@
+---
+title: "Discussion 11 - Recommender Systems"
+author: "Sin Ying Wong, Fan Xu"
+date: "11/10/2019"
+output: 
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+    theme: cerulean
+    highlight: pygments
+theme: lumen
+number_sections: yes
+toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Instructions:
+
+Your task is to analyze an existing recommender system that you find interesting.  You should:
+
+1. Perform a Scenario Design analysis as described below.  Consider whether it makes sense for your selected recommender system to perform scenario design twice, once for the organization (e.g. Amazon.com) and once for the organization's customers.
+
+2. Attempt to reverse engineer what you can about the site, from the site interface and any available information that you can find on the Internet or elsewhere.
+
+3. Include specific recommendations about how to improve the site's recommendation capabilities going forward. 
+
+4. Create your report using an R Markdown file, and create a discussion thread with a link to the GitHub repo where your Markdown file notebook resides.  You are not expected to need to write code for this discussion assignment.
+
+
+# 1. Scenario Design Analysis
+
+1. Who are your target users?
+
+  - Users who wants to purchase air tickets, hotel stays, cruises, etc. for their trips.
+
+  - Well-known bloggers/travelers to share their trip photos or reviews on their platform.
+
+2. What are their key goals?
+
+  - Customers: 
+  
+  Looks for the best offers and services for their trips within a period of dates and times, possibly with insurances package and can be refundable when needed under certain circumstances.
+
+  - Well-known bloggers/travelers:
+  
+  User-friendly interface to post their photos and reviews
+  
+  - TripAdvisor:
+  
+  To satify travelers' needs in booking all type of transportation, lodging, and restaurants.
+
+3. How can you help them accomplish those goals?
+
+  - Allow users to search by categories: Hotels, Flights, Cruises, Restaurants, etc.
+
+  - Allow users to search destinations by countries, states, cities, or popular locations
+
+  - Allow users to search flights, cruises, or hotels by companies
+
+  - Allow users to search by specific dates and times, or within a period of times to compare the price ranges
+
+  - Allow users to add multiple locations for searching connecting flights or cruises
+
+  - Allow users to sort asc or desc according to price, dates, discount %, # of transfers, customer reviews, etc.
+
+  - Remind and encourage users through email notifications to share their experiences and photos once they completed their trips.
+
+  - Make a list of popular reviews, may also emphasize a list of Top 10, on the website to attract new users and to encourage existing users to share their experience.
+  
+# Reverse Engineering
+
+  Trip Advisor has doing great job in satifying its customers need by providing a user-friendly platform.
+  They also have a good ranking system to list out the various choices of flights, hotels, restaurants, etc.
+  
+  Their ranking system is calculated by a few factors:
+  
+  - Quality of reviews: the higher the grading the business gets, the higher the posibility for it to be listed at a higher rank.
+  
+  - Number of reviews: the more the number of reviews means the more the users had visited the place, 
+  which shows that the business is popular amoung users.  The higher the popularity, the higher rank the business will get.
+  
+  - Recency of reviews: recent reviews would count greater than the old reviews, 
+  as it would better describe the recent decorations and performance of the business. 
+  
+  
+# Recommendations
+
+  TripAdvisor's ranking system has been great, however, it would be better if the ranking can fit each customers' needs and wishes.
+  TripAdvisor may build a behavior analysis system to analyze each customer's needs, habits, and spending power by using predictive modeling.
+  
+  By using the data of past trips, TripAdvisor can analyze 
+  
+  - customers' personal preference in hotel branding, outdoor or indoor pools, rooftop bars, type of cuisines, etc.
+  
+  - customers' spending power to suggest business that best suits his or her budgets which would raise their interest in placing a booking.
+  
+  - customers' vacation patterns to push notification of suitable travel suggestions.
+  Some may like beach and sunshine, some may like winter activities like snowboarding or skiing.
+  
+  - customers' age to suggest the most popular travel spots in his or her similar age in the recent months.
+
+# Citing
+
+Everything You Need to Know About the TripAdvisor Popularity Ranking: <https://www.tripadvisor.com/TripAdvisorInsights/w765>
+  
+  
