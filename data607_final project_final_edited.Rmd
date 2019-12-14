@@ -1,0 +1,485 @@
+---
+title: "Data607_Final Project"
+author: "Zhi Ying Chen (Sec#1), Mengqin Cai (Sec#3), Fan Xu (Sec#4), Sin Ying Wong (Sec#4)"
+date: "12/8/2019"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_collapsed: yes
+    toc_float: yes
+  md_document:
+    variant: markdown_github
+  pdf_document:
+        extra_dependencies: ["geometry", "multicol", "multirow"]
+theme: lumen
+number_sections: yes
+toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+New York City is one of the most famous places in the world. It draws millions of tourists every year which boosts our economy. NYC is therefore one of the hottest markets for Airbnb. Comparing to other nearby cities, New York City has the ease of commute by having a large subway coverage with varies bus lines and citibikes. self-guided travelers can choose to walk, take public transportations or ride bikes to their destination within the city. At the meantime, criminal rate of the neighborhood would also be a concern for travelers. Base on these, our team wants to analyze the relationship between Walk Scores, Criminal Records and Airbnb’s Review Scores in New York City.
+
+To perform analysis, we will obtain Airbnb data in NYC area from Inside Airbnb, walk scores of the airbnb locations from Walk Score, and criminal records from NYPD Arrest Open Data, and analyze the datasets to see if there is any relationship between each other. We will use histograms and maps to present our results.
+
+# WorkFlow
+
+Process Data
+
+- Extract datasets from the three websites by using .csv, web srapping, and API method.
+
+Tidy / Transform
+
+- Import those datasets into R
+
+- Tidy the data as necessary, eliminate unwanted columns
+
+- To combine the data sources, we need to link the neighborhoods from Airbnb dataset with the latitude and longitude information from NYPD Arrest Data.
+
+Analyze
+
+- We will try to analyze and/or model the datasets to find the relationship between the review scores and walk scores with the price on Airbnb.
+
+- We may also study the relationship of the criminal records of five boroughs with the price on Airbnb.
+
+Present
+
+- Use tables, charts, and/or maps to present our conclusions.
+
+
+# Packages
+
+The following libraries were used in this project:
+```{r package,message=FALSE, warning=FALSE}
+library(tidyverse)
+library(methods)
+library(data.table)
+library(knitr)
+library(rvest)
+library(RCurl)
+library(RSocrata)
+library(geosphere)
+library(gridExtra)
+```
+
+# Datasets
+
+We will use 4 datasets.
+
+## 1. Inside Airbnb
+
+a. Data Description
+
+Inside Airbnb is an independent, non-commerical and open source data tool sourced from publicly available information about Airbnb’s listings. It provides detailed listings data for famous cities from different countries around the world.
+
+Inside Airbnb: http://insideairbnb.com/get-the-data.html
+
+The dataset we used is for New York City, NY area. It was scraped from Airbnb by Inside Airbnb on 09/13/2019. Each record represents one home in New York City area that is avilable on 09/13/2019. It includes information of the avilable stay, its location, property type, room Type, price, review score rating, and some others. The location information is detailed with neighborhood, city, state, zip code, latitude, and longitude. The dataset is freely downloadable in zipped .csv format. It has about 50 thousand rows and more than 50 columns.
+
+
+b. Read Data:
+```{r data 1.1}
+Airbnb_raw <- read_csv("https://raw.githubusercontent.com/oggyluky11/Data/master/listings_1.csv")
+head(Airbnb_raw)
+```
+
+convert column `price` to numeric values, and clean columns `zipcode`, `neighbourhood_cleansed`. Finally we select columns `id`, `neighbourhood_cleansed`, `zipcode`, `latitude`, `longitude`,`price` and `review_scores_rating` for later analysis.
+
+```{r data 1.2}
+
+Airbnb <- Airbnb_raw %>% 
+  mutate(zipcode = str_replace_all(zipcode,'[^[:digit:]]',' ')) %>%
+  mutate(zipcode = ifelse(str_detect(zipcode,'[0-9]+'),
+                   str_extract(zipcode, '[[:digit:]]+'),zipcode)) %>%
+  select(id,
+         neighbourhood_cleansed,
+         zipcode,
+         latitude, 
+         longitude,
+         price,
+         review_scores_rating) 
+
+Airbnb
+```
+
+## 2. Walk Score
+
+a. Data Description
+
+Walk Score is a publicly accessible website promoting walkable neighborhoods. Walkable neighborhood is considered as one of the simplest and best solutions for the environment. They provide scores to neighborhoods by evaluating the walkability and transportation when choosing where to live. They provide over 20 million scores in total.
+
+Walk Score: https://www.walkscore.com/
+
+From the Inside Airbnb NYC dataset, we have a range of neighborhood and zip codes of the available homes among NYC area. We use web scrapping method to extract the walk score, transit score and bike score of each of the Airbnb home locations from the Walk Score website. We therefore have all the walk score, transit score and bike score correspond to our list of Airbnb home records. There are about 5 to 6 columns in this dataset, including neighborhood, zip code, state (NY), and the 3 corresponding scores. There will not be as many rows as the Airbnb NYC dataset as we have eliminated the duplicate locations from the Airbnb NYC dataset.
+
+# Data 2: Walk Score --- Web Scraping
+
+b. Read Data
+
+Obtain distinct location data.
+```{r data 2.1}
+
+distinct_location <- Airbnb %>%
+  filter(!is.na(review_scores_rating)) %>%
+  select(neighbourhood_cleansed, zipcode) %>%
+  distinct() %>% 
+  mutate(location = str_c(zipcode,', ',neighbourhood_cleansed, ', NY')) %>%
+  mutate(url_tail = tolower(str_c(zipcode, '-', str_replace_all(neighbourhood_cleansed, '[[:space:][:punct:]]','\\-'),'-NY'))) 
+  
+distinct_location
+```
+
+Create a table to store walk scores
+```{r data 2.2}
+
+scores <- data.frame(location = character(),
+                     walk_score = numeric(),
+                     transit_score = numeric(),
+                     bike_score = numeric(),
+                     stringsAsFactors = FALSE)
+
+```
+
+
+Scraping walk scores from https://www.walkscore.com/score/, here we sampled the first 5 locations to demostrate the code.
+```{r data 2.3}
+
+url_base <- 'https://www.walkscore.com/score/'
+url_tail <-distinct_location$url_tail
+
+
+for (location in url_tail[1:5]){
+  
+  url <- str_c(url_base, location)
+  
+  html_raw <- url %>%
+    getURL() %>%
+    read_html()
+  
+  print(url)
+  
+walk_score_temp <- html_raw %>%
+  html_node(xpath = "//img[contains(@src,'//pp.walk.sc/badge/walk/score')]")%>%
+  html_attr('src') %>%
+  str_extract('[0-9]+') %>%
+  as.numeric()
+
+transit_score_temp <- html_raw %>%
+  html_node(xpath = "//img[contains(@src,'//pp.walk.sc/badge/transit/score')]")%>%
+  html_attr('src') %>%
+  str_extract('[0-9]+') %>%
+  as.numeric()
+
+bike_score_temp <- html_raw %>%
+  html_node(xpath = "//img[contains(@src,'//pp.walk.sc/badge/bike/score')]")%>%
+  html_attr('src') %>%
+  str_extract('[0-9]+') %>%
+  as.numeric()
+
+#print(walk_score_temp)
+#print(transit_score_temp)
+#print(bike_score_temp)
+
+
+scores <- add_row(scores,
+                  location = location,
+                  walk_score = walk_score_temp,
+                  transit_score = transit_score_temp,
+                  bike_score = bike_score_temp)  
+    
+  
+Sys.sleep(1)  
+}
+
+scores
+
+#write_csv(scores, 'C:\\Users\\Administrator\\Desktop\\scores.csv')
+```
+
+
+We stored the walk scores into CSV file for the later part of the project.
+
+```{r data 2.4}
+# Read score data into R
+scores <- read_csv('https://raw.githubusercontent.com/oggyluky11/Data/master/scores.csv')
+scores
+```
+
+## 3. NYPD Arrest Open Data
+
+a. Data Description
+Open Data has two sets of NYPD Arrest Data, one going back to 2006 through the end of 2018, one through this current year (1/1 - 9/30/2019). As our Airbnb dataset was dated 09/13, we will use the NYPD Arrest Data Year to Date dataset for our analysis instead of the historical dataset.
+
+NYPD Arrest Open Data (Year to Date): https://data.cityofnewyork.us/Public-Safety/NYPD-Arrest-Data-Year-to-Date-/uip8-fykc
+
+NYPD Arrest Data (Year to Date) has a list of every arrest data in NYC during this current year (01/01/2019 - 09/30/2019). This data is manually extracted every quarter and reviewed by the Office of Management Analysis and Planning before being posted on the NYPD website. Each record represents an arrest effected in NYC by the NYPD and includes information about the type of crime, the location and time of enforcement. In addition, information related to suspect demographics is also included. This dataset has about 168 thousand rows and 18 columns. We will access it via API format.
+
+
+b. Read Data
+
+```{r data 3.1}
+#Reand NYPD data into R
+url <- "https://data.cityofnewyork.us/resource/uip8-fykc.json"
+app_token <- "TfSVpyHY3KyAyimAxFDgFufJM"
+             
+nypd_raw <- read.socrata(url, app_token = app_token)
+nypd_raw
+```
+
+
+We select coordinates in the data of **september** as our sample to conduct the later analysis.
+
+```{r data 3.2}
+CrimeRecord <- nypd_raw %>%
+  filter(month(arrest_date) == 9) %>%
+  select(arrest_key, latitude, longitude) %>%
+  mutate(latitude = parse_number(latitude),
+         longitude = parse_number(longitude)) %>%
+  mutate(coordinate = map2(.$longitude, .$latitude, c))
+
+CrimeRecord
+```
+
+
+## 4. NYC Borough's zip codes
+
+a. Data Description
+This data set contains all zipcodes and the corresponding borough in great new york area.
+
+https://www.kaggle.com/kimjinyoung/nyc-borough-zip
+
+
+b. Read Data
+
+```{r data 4.1}
+zip_borough_raw <- read_csv('https://raw.githubusercontent.com/oggyluky11/Data/master/zip_borough.csv')
+
+zip_borough <- zip_borough_raw %>%
+  mutate(zip = as.character(zip)) %>%
+  mutate(borough = recode(borough, Staten = 'Staten Island'))
+
+zip_borough
+```
+
+
+
+
+# Data consolidation
+
+## 1. Connect NYC crime data to airbnb data
+
+For each airbnb location, we will compute the count of arrests within 0.5 mile of the location. 
+
+Please note that there are more than 40K locations in the airbnb dataset and 16K in crime dataset, the compute of distance between each airbnb location to all coordinates of arrests is too large to be conducted in a single matrix computation. Therefore we split the crime data into 4 portions, compute the count of arrest in four smaller matrix computation then add up the numbers.
+
+```{r data consolidation 1, eval = FALSE}
+
+p_airbnb <- cbind(Airbnb$longitude, Airbnb$latitude)
+p_crime_1 <- cbind(CrimeRecord$longitude[1:4000], CrimeRecord$latitude[1:4000])
+p_crime_2 <- cbind(CrimeRecord$longitude[4001:8000], CrimeRecord$latitude[4001:8000])
+p_crime_3 <- cbind(CrimeRecord$longitude[8001:12000], CrimeRecord$latitude[8001:12000])
+p_crime_4 <- cbind(CrimeRecord$longitude[12001:16656], CrimeRecord$latitude[12001:16656])
+
+#length(p2[,1])
+#length(p1)
+dm1 <- distm(p_airbnb, p_crime_1)/1609.344
+dm2 <- distm(p_airbnb, p_crime_2)/1609.344
+dm3 <- distm(p_airbnb, p_crime_3)/1609.344
+dm4 <- distm(p_airbnb, p_crime_4)/1609.344
+
+arrest_count_1 <- rowSums(dm1 <= 0.5)
+arrest_count_2 <- rowSums(dm2 <= 0.5)
+arrest_count_3 <- rowSums(dm3 <= 0.5)
+arrest_count_4 <- rowSums(dm4 <= 0.5)
+
+arrest_count_total <- arrest_count_1+arrest_count_2+arrest_count_3+arrest_count_4
+
+head(arrest_count_1,20)
+head(arrest_count_2,20)
+head(arrest_count_3,20)
+head(arrest_count_4,20)
+head(arrest_count_total,20)
+
+
+#arrest_count_total %>%
+  #data.frame() %>%
+  #rename(arrest_count_total = '.') %>%
+  #write.csv('D://DATA SCIENCE//DATA 607 FALL 2019//Homework//Final Project//arrest_count_total.csv', append = FALSE, row.names = FALSE)
+```
+
+we store in output of the previous code trunk in CSV for later analysis.
+
+```{r data consolidation 2}
+arrest_count_total <- read_csv('https://raw.githubusercontent.com/oggyluky11/Data/master/arrest_count_total.csv')
+arrest_count_total
+```
+
+
+Combine Airbnb location, price, review scores, walk scores, and crime arrest count into a single dataframe. 
+```{r data consolidation 3}
+
+Airbnb_Scores <- Airbnb %>%
+  mutate(arrest_count = arrest_count_total$arrest_count_total) %>%
+  left_join(distinct_location, by = c('neighbourhood_cleansed','zipcode')) %>%
+  left_join(scores, by = c('url_tail')) %>%
+  left_join(zip_borough, by = c('zipcode' = 'zip')) %>%
+  mutate_all(~na_if(str_trim(.), '')) %>%
+  mutate(price = parse_number(price),
+         review_scores_rating = parse_number(review_scores_rating),
+         walk_score = parse_number(walk_score),
+         transit_score = parse_number(transit_score),
+         bike_score = parse_number(bike_score),
+         latitude = parse_number(latitude),
+         longitude = parse_number(longitude),
+         arrest_count = parse_number(arrest_count)) %>%
+  drop_na() %>%
+  select(id, 
+         zipcode, 
+         neighbourhood_cleansed,
+         borough,
+         price, 
+         review_scores_rating, 
+         walk_score, 
+         transit_score, 
+         bike_score, 
+         arrest_count) 
+
+Airbnb_Scores
+```
+
+
+
+
+```{r data consolidation 4}
+zipReviews <- Airbnb_Scores %>% 
+  group_by(zipcode, neighbourhood_cleansed, borough) %>% 
+  summarise(price=mean(price,na.rm = TRUE),
+            review_scores_rating = mean(review_scores_rating, na.rm = TRUE),
+            walk_score=mean(walk_score,na.rm = TRUE),
+            transit_score=mean(walk_score,na.rm = TRUE),
+            bike_score=mean(bike_score,na.rm=TRUE))%>% 
+  arrange(desc(price)) %>%
+  ungroup()
+
+#zipReviews$zipcode <- as.character(zipReviews$zipcode)
+zipReviews
+
+```
+
+# Analysis 1: Pricing by Borough
+
+Among all boroughs, Manhattan has the highest average Airbnb rent price, follows by Brooklyn, Queens, Staten Island and Bronx.
+
+It is reasonable for Manhattan having the highest average price as it has the most tourist spots and is the most transportation-friendly. 
+
+```{r plot1, warning=FALSE}
+zipReviews %>% 
+  mutate(borough = as.factor(borough)) %>%
+  ggplot(aes( x= fct_reorder(borough, desc(price)), y = price, color = borough)) +
+  geom_boxplot() +
+  ylim(0, 900) +
+  labs(title = 'NYC Airbnb Pricing',
+       subtitle = 'by Borough')+
+  xlab('Borough')+
+  ylab('Price')
+
+
+ 
+```
+
+
+
+# Analysis 2: Review Scores vs Price
+
+For all boroughs in New York, the higher the review scores, the higher the airbnb price.
+
+Among all five boroughs, Manhattan has the highest amont of reviews, then Queens, Brooklyn, Bronx, and Staten Island. It may be also related to the number of airbnb listings available.
+
+From the scatter plot, we can see 5 color lines as the corresponding linear model.  They all show a positive relationship between Review Score and Price. The black dotted line shows the average linear model of the five. 
+
+```{r plot2, warning=FALSE}
+p1<- ggplot(zipReviews, aes( x= review_scores_rating, y = price, color = borough)) +
+  geom_point() +
+  xlim(70, 100) +
+  ylim(0, 900) +
+  labs(title = 'Review Scores vs Price',
+       subtitle = 'by Borough')+
+  xlab('Review Score')+
+  ylab('Price')+
+  geom_smooth(method = 'lm',se = FALSE)+
+  geom_abline(color="black",linetype = 2)+
+  theme(legend.position = "none")  
+
+p2 <- zipReviews %>% 
+  ggplot(aes(review_scores_rating, fill = borough))+
+  geom_histogram(binwidth = 1) +
+  xlim(70, 100) +
+  facet_grid(rows = vars(fct_reorder(borough, review_scores_rating)))
+
+grid.arrange(p1, p2, nrow = 1)
+ 
+
+```
+
+
+# Analysis 3: Walk Sore vs Price
+
+The scatter plot below shows us the relationship between walk score and airbnb price.
+
+The linear model for Bronx borough is nearly flat, hence the relationship between walk score and price for Bronx is not strong.
+
+Manhattan, Brooklyn, and Staten Island are having positive relationship between walk score and airbnb price, while Queens is having a negative relationship between them.
+
+Due to the differences between five boroughs, it is hard to conclude a standard relationship between walk score and price.
+
+```{r Plot3, warning=FALSE}
+
+ggplot(zipReviews, aes(x = walk_score, y = price, color = borough))+
+  geom_point()+xlim(70,100)+ylim(0,300)+
+  labs(title="Walk Sore vs Price",subtitle="by borough")+
+  xlab("walk score")+ylab("price")+
+  geom_smooth(method = 'lm',se = FALSE)+
+  geom_abline(color="black",linetype = 2)
+
+```
+
+
+
+
+# Analysis 4: Criminal arrest count by Borough
+
+We have 5 separate scatterplots for the five boroughs showing the relationship between Arrest Count and Price.
+
+Due to the large amount of datapoints (arrest counts) from Manhattan, it is hard to conclude the relationship solely on this borough.
+
+When looking at the other four boroughs, there is a trend that the higher the arrest counts, the lower the airbnb price. It is not obvious for Manhattan but we can see the points on the right are less dense than the left.
+
+
+```{r plot 4, warning=FALSE}
+
+ggplot(Airbnb_Scores, aes(x = arrest_count, y = price, color = borough))+
+  geom_point()+
+  #xlim(70,100)+
+  ylim(0,1000)+
+  labs(title="Arrest Count vs Price",subtitle="by borough")+
+  xlab("Arrest Count")+ylab("price")+
+  facet_wrap(~borough)
+
+
+```
+
+
+# Conclusion
+
+We focused on investigating Airbnb's pricing with other information on hand.  We used review scores, walk scores, and arrest counts from the Airbnb dataset, walk scores, and criminal records.
+
+Manhattan has the most expensive pricing on Airbnb among all five NYC boroughs. The higher the review scores of the Airbnb listings, the higher the price of them. On the other hand, the more than arrest counts within 0.5 mile from an Airbnb listing, the lower the set price of it.
+
+However, there is no obvious relationship between walk score and Airbnb's pricing. It may be because the transit is convenient in NYC. Besides walking, we also have subway, buses, free ferry and bikes. This study may have a different result if the location is set in a less condense and less commute-friendly city.
+
+
